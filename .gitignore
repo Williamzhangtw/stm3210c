@@ -37,6 +37,7 @@
 *.obj
 *.o
 *.sbr
+*.Bak
 
 # Build files
 *.bat  	# define exception below if needed
@@ -46,6 +47,8 @@
 
 # Debugger files
 #*.ini  	   # define exception below if needed
+*.dbgconf
+*.scvd
 
 # Other files
 *.build_log.htm
@@ -64,7 +67,7 @@
 *.log
 *.scratch
 *.mxproject #cubemx
-#*.sct
+*.sct  #scatter file
 
 
 # Miscellaneous
