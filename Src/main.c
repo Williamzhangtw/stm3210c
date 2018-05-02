@@ -58,7 +58,7 @@
 /* Private variables ---------------------------------------------------------*/
 osThreadId defaultTaskHandle;
 osThreadId myTask02Handle;
-osSemaphoreId myBinarySem01Handle;
+osMutexId myMutex01Handle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -113,19 +113,15 @@ int main(void)
 
   /* USER CODE END 2 */
 
+  /* Create the mutex(es) */
+  /* definition and creation of myMutex01 */
+  osMutexDef(myMutex01);
+  myMutex01Handle = osMutexCreate(osMutex(myMutex01));
+
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
-  /* Create the semaphores(s) */
-  /* definition and creation of myBinarySem01 */
-  osSemaphoreDef(myBinarySem01);
-  myBinarySem01Handle = osSemaphoreCreate(osSemaphore(myBinarySem01), 1);
-	
-	if(myBinarySem01Handle == 0)
-	{
-		
-	}
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -138,17 +134,11 @@ int main(void)
   /* definition and creation of defaultTask */
   osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-	
-	if(defaultTaskHandle == NULL)
-	{
-	}
-	
+
   /* definition and creation of myTask02 */
   osThreadDef(myTask02, StartTask02, osPriorityIdle, 0, 128);
   myTask02Handle = osThreadCreate(osThread(myTask02), NULL);
-	if(myTask02Handle == NULL)
-	{
-	}
+
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -277,7 +267,7 @@ void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
 		HAL_Delay(1);
 		if(HAL_GPIO_ReadPin(BUTTON_USER_GPIO_Port,BUTTON_USER_Pin)== GPIO_PIN_RESET)
 		{
-			osSemaphoreRelease(myBinarySem01Handle);
+			//do something
 		}
 	}
 }	
@@ -296,15 +286,18 @@ void StartDefaultTask(void const * argument)
 	for(;;)
 	{
 		
-		osSemaphoreWait(myBinarySem01Handle,osWaitForever);
+		osMutexWait(myMutex01Handle,osWaitForever);
 		count = osKernelSysTick() + 2000;
 		while (count > osKernelSysTick())
 		{
 			BSP_LED_Toggle(LED_BLUE);
 			osDelay(200);
 		}
+		
 		BSP_LED_Off(LED_BLUE);
-		osThreadSuspend(NULL);
+		osMutexRelease(myMutex01Handle);
+		osThreadSuspend(defaultTaskHandle);
+
 	}
 	
   /* USER CODE END 5 */ 
@@ -317,8 +310,8 @@ void StartTask02(void const * argument)
   uint32_t count;
 	for(;;)
 	{
-		osSemaphoreWait(myBinarySem01Handle,osWaitForever);
-		
+		osMutexWait(myMutex01Handle,osWaitForever);
+
 		count = osKernelSysTick() + 2000;
 		while(count > osKernelSysTick())
 		{
@@ -327,6 +320,7 @@ void StartTask02(void const * argument)
 		}
 		BSP_LED_Off(LED_GREEN);
 		osThreadResume(defaultTaskHandle);
+		osMutexRelease(myMutex01Handle);
 	}
   /* USER CODE END StartTask02 */
 }
