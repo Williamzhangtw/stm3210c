@@ -69,6 +69,7 @@
 #define LED_GREEN_GPIO_Port GPIOD
 #define BUTTON_USER_Pin GPIO_PIN_9
 #define BUTTON_USER_GPIO_Port GPIOB
+#define BUTTON_USER_EXTI_IRQn EXTI9_5_IRQn
 
 /* ########################## Assert Selection ############################## */
 /**

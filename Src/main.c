@@ -58,6 +58,7 @@
 /* Private variables ---------------------------------------------------------*/
 osThreadId defaultTaskHandle;
 osThreadId myTask02Handle;
+osSemaphoreId myBinarySem01Handle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -116,6 +117,15 @@ int main(void)
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
 
+  /* Create the semaphores(s) */
+  /* definition and creation of myBinarySem01 */
+  osSemaphoreDef(myBinarySem01);
+  myBinarySem01Handle = osSemaphoreCreate(osSemaphore(myBinarySem01), 1);
+	
+	if(myBinarySem01Handle == 0)
+	{
+		
+	}
   /* USER CODE BEGIN RTOS_SEMAPHORES */
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
@@ -128,11 +138,17 @@ int main(void)
   /* definition and creation of defaultTask */
   osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
-
+	
+	if(defaultTaskHandle == NULL)
+	{
+	}
+	
   /* definition and creation of myTask02 */
   osThreadDef(myTask02, StartTask02, osPriorityIdle, 0, 128);
   myTask02Handle = osThreadCreate(osThread(myTask02), NULL);
-
+	if(myTask02Handle == NULL)
+	{
+	}
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
@@ -234,7 +250,7 @@ static void MX_GPIO_Init(void)
   /*Configure GPIO pin Output Level */
   HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin|LED_RED_Pin|LED_BLUE_Pin|LED_GREEN_Pin, GPIO_PIN_RESET);
 
-  /*Configure GPIO pins : LED_ORANGE_Pin LED__RED_Pin LED_BLUE_Pin LED_GREEN_Pin */
+  /*Configure GPIO pins : LED_ORANGE_Pin LED_RED_Pin LED_BLUE_Pin LED_GREEN_Pin */
   GPIO_InitStruct.Pin = LED_ORANGE_Pin|LED_RED_Pin|LED_BLUE_Pin|LED_GREEN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
@@ -242,13 +258,30 @@ static void MX_GPIO_Init(void)
 
   /*Configure GPIO pin : BUTTON_USER_Pin */
   GPIO_InitStruct.Pin = BUTTON_USER_Pin;
-  GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+  GPIO_InitStruct.Mode = GPIO_MODE_IT_FALLING;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
   HAL_GPIO_Init(BUTTON_USER_GPIO_Port, &GPIO_InitStruct);
+
+  /* EXTI interrupt init*/
+  HAL_NVIC_SetPriority(EXTI9_5_IRQn, 5, 0);
+  HAL_NVIC_EnableIRQ(EXTI9_5_IRQn);
 
 }
 
 /* USER CODE BEGIN 4 */
+
+void HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin)
+{
+	if(GPIO_Pin == GPIO_PIN_9)
+	{
+		HAL_Delay(1);
+		if(HAL_GPIO_ReadPin(BUTTON_USER_GPIO_Port,BUTTON_USER_Pin)== GPIO_PIN_RESET)
+		{
+			osSemaphoreRelease(myBinarySem01Handle);
+		}
+	}
+}	
+
 
 /* USER CODE END 4 */
 
@@ -258,27 +291,22 @@ void StartDefaultTask(void const * argument)
 
   /* USER CODE BEGIN 5 */
   uint32_t count;
+	
+	
 	for(;;)
 	{
-		count = osKernelSysTick() + 5000;
+		
+		osSemaphoreWait(myBinarySem01Handle,osWaitForever);
+		count = osKernelSysTick() + 2000;
 		while (count > osKernelSysTick())
 		{
 			BSP_LED_Toggle(LED_BLUE);
 			osDelay(200);
 		}
 		BSP_LED_Off(LED_BLUE);
-	
 		osThreadSuspend(NULL);
-	
-		count = osKernelSysTick() + 5000;
-		while (count > osKernelSysTick())
-		{
-			BSP_LED_Toggle(LED_BLUE);
-			osDelay(400);
-		}
-		osThreadResume(myTask02Handle);
-	
 	}
+	
   /* USER CODE END 5 */ 
 }
 
@@ -289,15 +317,16 @@ void StartTask02(void const * argument)
   uint32_t count;
 	for(;;)
 	{
-		count = osKernelSysTick() + 10000;
+		osSemaphoreWait(myBinarySem01Handle,osWaitForever);
+		
+		count = osKernelSysTick() + 2000;
 		while(count > osKernelSysTick())
 		{
 			BSP_LED_Toggle(LED_GREEN);
-			osDelay(500);
+			osDelay(200);
 		}
 		BSP_LED_Off(LED_GREEN);
 		osThreadResume(defaultTaskHandle);
-		osThreadSuspend(NULL);
 	}
   /* USER CODE END StartTask02 */
 }
