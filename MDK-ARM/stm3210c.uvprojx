@@ -415,6 +415,11 @@
               <FileType>1</FileType>
               <FilePath>../Src/freertos.c</FilePath>
             </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\led.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -956,6 +961,11 @@
               <FileName>freertos.c</FileName>
               <FileType>1</FileType>
               <FilePath>../Src/freertos.c</FilePath>
+            </File>
+            <File>
+              <FileName>led.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\Src\led.c</FilePath>
             </File>
           </Files>
         </Group>

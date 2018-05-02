@@ -61,8 +61,8 @@
 
 #define LED_ORANGE_Pin GPIO_PIN_13
 #define LED_ORANGE_GPIO_Port GPIOD
-#define LED__RED_Pin GPIO_PIN_3
-#define LED__RED_GPIO_Port GPIOD
+#define LED_RED_Pin GPIO_PIN_3
+#define LED_RED_GPIO_Port GPIOD
 #define LED_BLUE_Pin GPIO_PIN_4
 #define LED_BLUE_GPIO_Port GPIOD
 #define LED_GREEN_Pin GPIO_PIN_7

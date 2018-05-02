@@ -52,7 +52,7 @@
 #include "cmsis_os.h"
 
 /* USER CODE BEGIN Includes */
-
+#include "led.h"
 /* USER CODE END Includes */
 
 /* Private variables ---------------------------------------------------------*/
@@ -232,10 +232,10 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin|LED__RED_Pin|LED_BLUE_Pin|LED_GREEN_Pin, GPIO_PIN_RESET);
+  HAL_GPIO_WritePin(GPIOD, LED_ORANGE_Pin|LED_RED_Pin|LED_BLUE_Pin|LED_GREEN_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pins : LED_ORANGE_Pin LED__RED_Pin LED_BLUE_Pin LED_GREEN_Pin */
-  GPIO_InitStruct.Pin = LED_ORANGE_Pin|LED__RED_Pin|LED_BLUE_Pin|LED_GREEN_Pin;
+  GPIO_InitStruct.Pin = LED_ORANGE_Pin|LED_RED_Pin|LED_BLUE_Pin|LED_GREEN_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
   HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
@@ -257,12 +257,28 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
-  /* Infinite loop */
-  for(;;)
-  {
-		HAL_GPIO_TogglePin(LED_BLUE_GPIO_Port,LED_BLUE_Pin);
-    osDelay(100);
-  }
+  uint32_t count;
+	for(;;)
+	{
+		count = osKernelSysTick() + 5000;
+		while (count > osKernelSysTick())
+		{
+			BSP_LED_Toggle(LED_BLUE);
+			osDelay(200);
+		}
+		BSP_LED_Off(LED_BLUE);
+	
+		osThreadSuspend(NULL);
+	
+		count = osKernelSysTick() + 5000;
+		while (count > osKernelSysTick())
+		{
+			BSP_LED_Toggle(LED_BLUE);
+			osDelay(400);
+		}
+		osThreadResume(myTask02Handle);
+	
+	}
   /* USER CODE END 5 */ 
 }
 
@@ -270,11 +286,19 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-  /* Infinite loop */
-  for(;;)
-  {
-    osDelay(1);
-  }
+  uint32_t count;
+	for(;;)
+	{
+		count = osKernelSysTick() + 10000;
+		while(count > osKernelSysTick())
+		{
+			BSP_LED_Toggle(LED_GREEN);
+			osDelay(500);
+		}
+		BSP_LED_Off(LED_GREEN);
+		osThreadResume(defaultTaskHandle);
+		osThreadSuspend(NULL);
+	}
   /* USER CODE END StartTask02 */
 }
 
