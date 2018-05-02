@@ -57,8 +57,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 osThreadId defaultTaskHandle;
-osThreadId myTask02Handle;
-osMessageQId myQueue01Handle;
+osTimerId myTimer01Handle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -69,7 +68,7 @@ osMessageQId myQueue01Handle;
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
 void StartDefaultTask(void const * argument);
-void StartTask02(void const * argument);
+void Callback01(void const * argument);
 
 /* USER CODE BEGIN PFP */
 /* Private function prototypes -----------------------------------------------*/
@@ -124,8 +123,14 @@ int main(void)
   /* add semaphores, ... */
   /* USER CODE END RTOS_SEMAPHORES */
 
+  /* Create the timer(s) */
+  /* definition and creation of myTimer01 */
+  osTimerDef(myTimer01, Callback01);
+  myTimer01Handle = osTimerCreate(osTimer(myTimer01), osTimerPeriodic, NULL);
+
   /* USER CODE BEGIN RTOS_TIMERS */
   /* start timers, add new ones, ... */
+	osTimerStart(myTimer01Handle, 100);
   /* USER CODE END RTOS_TIMERS */
 
   /* Create the thread(s) */
@@ -133,18 +138,9 @@ int main(void)
   osThreadDef(defaultTask, StartDefaultTask, osPriorityNormal, 0, 128);
   defaultTaskHandle = osThreadCreate(osThread(defaultTask), NULL);
 
-  /* definition and creation of myTask02 */
-  osThreadDef(myTask02, StartTask02, osPriorityIdle, 0, 128);
-  myTask02Handle = osThreadCreate(osThread(myTask02), NULL);
-
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
-
-  /* Create the queue(s) */
-  /* definition and creation of myQueue01 */
-  osMessageQDef(myQueue01, 16, uint16_t);
-  myQueue01Handle = osMessageCreate(osMessageQ(myQueue01), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -287,57 +283,19 @@ void StartDefaultTask(void const * argument)
 	
 	for(;;)
 	{
-		
-		if (osMessagePut(myQueue01Handle, ProducerValue, 100) != osOK)
-    {
-      /* Toggle LED3 to indicate error  */
-      BSP_LED_On(LED_RED);
-    }
-    else
-    {
-      /* Increment the variable we are going to post next time round.  The
-      consumer will expect the numbers to follow in numerical order */
-      ++ProducerValue;
-
-      /* Toggle LED1 to indicate a correct number received  */
-      BSP_LED_Toggle(LED_BLUE);
-      osDelay(100);
-    }
-
+		BSP_LED_Toggle(LED_BLUE);
+		osDelay(100);
 	}
 	
   /* USER CODE END 5 */ 
 }
 
-/* StartTask02 function */
-void StartTask02(void const * argument)
+/* Callback01 function */
+void Callback01(void const * argument)
 {
-  /* USER CODE BEGIN StartTask02 */
-  //this task is consumer
-  osEvent event;
-  /* Infinite loop */
-   for (;;)
-  {
-    /* Get the message from the queue */
-    event = osMessageGet(myQueue01Handle, 100);
-
-    if (event.status == osEventMessage)
-    {
-      if (event.value.v != ConsumerValue)
-      {
-        
-        /* Toggle LED3 to indicate error */
-        BSP_LED_On(LED_RED);
-      }
-      else
-      {
-        /* Increment the value we expect to remove from the queue next time
-        round */
-        ++ConsumerValue;
-      }
-    }
-  }
-  /* USER CODE END StartTask02 */
+  /* USER CODE BEGIN Callback01 */
+  BSP_LED_Toggle(LED_RED);
+  /* USER CODE END Callback01 */
 }
 
 /**
