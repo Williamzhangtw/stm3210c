@@ -58,7 +58,7 @@
 /* Private variables ---------------------------------------------------------*/
 osThreadId defaultTaskHandle;
 osThreadId myTask02Handle;
-osMutexId myMutex01Handle;
+osMessageQId myQueue01Handle;
 
 /* USER CODE BEGIN PV */
 /* Private variables ---------------------------------------------------------*/
@@ -77,6 +77,9 @@ void StartTask02(void const * argument);
 /* USER CODE END PFP */
 
 /* USER CODE BEGIN 0 */
+
+  uint16_t ProducerValue = 0;
+	uint16_t ConsumerValue = 0;
 
 /* USER CODE END 0 */
 
@@ -113,11 +116,6 @@ int main(void)
 
   /* USER CODE END 2 */
 
-  /* Create the mutex(es) */
-  /* definition and creation of myMutex01 */
-  osMutexDef(myMutex01);
-  myMutex01Handle = osMutexCreate(osMutex(myMutex01));
-
   /* USER CODE BEGIN RTOS_MUTEX */
   /* add mutexes, ... */
   /* USER CODE END RTOS_MUTEX */
@@ -142,6 +140,11 @@ int main(void)
   /* USER CODE BEGIN RTOS_THREADS */
   /* add threads, ... */
   /* USER CODE END RTOS_THREADS */
+
+  /* Create the queue(s) */
+  /* definition and creation of myQueue01 */
+  osMessageQDef(myQueue01, 16, uint16_t);
+  myQueue01Handle = osMessageCreate(osMessageQ(myQueue01), NULL);
 
   /* USER CODE BEGIN RTOS_QUEUES */
   /* add queues, ... */
@@ -280,23 +283,26 @@ void StartDefaultTask(void const * argument)
 {
 
   /* USER CODE BEGIN 5 */
-  uint32_t count;
 	
 	
 	for(;;)
 	{
 		
-		osMutexWait(myMutex01Handle,osWaitForever);
-		count = osKernelSysTick() + 2000;
-		while (count > osKernelSysTick())
-		{
-			BSP_LED_Toggle(LED_BLUE);
-			osDelay(200);
-		}
-		
-		BSP_LED_Off(LED_BLUE);
-		osMutexRelease(myMutex01Handle);
-		osThreadSuspend(defaultTaskHandle);
+		if (osMessagePut(myQueue01Handle, ProducerValue, 100) != osOK)
+    {
+      /* Toggle LED3 to indicate error  */
+      BSP_LED_On(LED_RED);
+    }
+    else
+    {
+      /* Increment the variable we are going to post next time round.  The
+      consumer will expect the numbers to follow in numerical order */
+      ++ProducerValue;
+
+      /* Toggle LED1 to indicate a correct number received  */
+      BSP_LED_Toggle(LED_BLUE);
+      osDelay(100);
+    }
 
 	}
 	
@@ -307,21 +313,30 @@ void StartDefaultTask(void const * argument)
 void StartTask02(void const * argument)
 {
   /* USER CODE BEGIN StartTask02 */
-  uint32_t count;
-	for(;;)
-	{
-		osMutexWait(myMutex01Handle,osWaitForever);
+  //this task is consumer
+  osEvent event;
+  /* Infinite loop */
+   for (;;)
+  {
+    /* Get the message from the queue */
+    event = osMessageGet(myQueue01Handle, 100);
 
-		count = osKernelSysTick() + 2000;
-		while(count > osKernelSysTick())
-		{
-			BSP_LED_Toggle(LED_GREEN);
-			osDelay(200);
-		}
-		BSP_LED_Off(LED_GREEN);
-		osThreadResume(defaultTaskHandle);
-		osMutexRelease(myMutex01Handle);
-	}
+    if (event.status == osEventMessage)
+    {
+      if (event.value.v != ConsumerValue)
+      {
+        
+        /* Toggle LED3 to indicate error */
+        BSP_LED_On(LED_RED);
+      }
+      else
+      {
+        /* Increment the value we expect to remove from the queue next time
+        round */
+        ++ConsumerValue;
+      }
+    }
+  }
   /* USER CODE END StartTask02 */
 }
 
